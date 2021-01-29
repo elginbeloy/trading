@@ -14,14 +14,13 @@ def get_time_interval_bars(symbols, multiplier, interval, start_date, end_date):
     for symbol in tqdm(symbols):
       try:
         response = client.stocks_equities_aggregates(symbol, multiplier, interval, start_date, end_date)
-        if not response.success or not response.results_count:
+        if response.status != "OK" or not response.resultsCount:
           print(f"Failed to fetch bars for {symbol}.")
           continue
-      except HTTPError as e:
+      except HTTPError:
         print(f"Failed to fetch bars for {symbol}.")
-        pass
 
-      symbol_bars[symbol] = response.results
+      symbol_bars[symbol] = pd.DataFrame(response.results)
 
   return symbol_bars
 

@@ -22,7 +22,7 @@ def zero_mean_center(series):
   return ((series - series.mean()) / series.std()).to_numpy()
 
 
-def get_training_data(symbol_bars, lookback_bar_amount, target_appreciation_percentage, max_depreciation_percentage, max_holding_period_bars, evaluation=False):
+def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_appreciation_percentage, max_depreciation_percentage, evaluation=False):
   x = []
   y = []
 
@@ -35,24 +35,26 @@ def get_training_data(symbol_bars, lookback_bar_amount, target_appreciation_perc
     close_prices = bars['c']
     volume = bars['v']
     vwa_prices = bars['vw']
-    # total_trades = bars['n']
+    total_trades = bars['n']
 
     bar_range = range(
-      lookback_bar_amount, 
+      lookback_bars, 
       len(close_prices) - (max_holding_period_bars + 1), 
-      lookback_bar_amount)
+      lookback_bars)
     for period_end_bar in bar_range:
-      period_start_bar = period_end_bar-lookback_bar_amount
+      period_start_bar = period_end_bar-lookback_bars
       period_open_prices = open_prices.iloc[period_start_bar:period_end_bar] 
       period_close_prices = close_prices.iloc[period_start_bar:period_end_bar]
       period_low_prices = low_prices.iloc[period_start_bar:period_end_bar]
       period_high_prices = high_prices.iloc[period_start_bar:period_end_bar]
       period_volume = volume.iloc[period_start_bar:period_end_bar]
       period_vwa_prices = vwa_prices.iloc[period_start_bar:period_end_bar]
+      period_total_trades = total_trades.iloc[period_start_bar:period_end_bar]
 
       if (period_open_prices.std() == 0 or period_close_prices.std() == 0 or
         period_low_prices.std() == 0 or period_high_prices.std() == 0 or 
-        period_vwa_prices.std() == 0 or period_volume.std() == 0):
+        period_vwa_prices.std() == 0 or period_volume.std() == 0 or
+        period_total_trades.std() == 0):
         print(f'{symbol}: Cant use a bar due to 0 std in data.')
         continue
 
@@ -65,6 +67,7 @@ def get_training_data(symbol_bars, lookback_bar_amount, target_appreciation_perc
         zero_mean_center(period_high_prices),
         zero_mean_center(period_volume),
         zero_mean_center(period_vwa_prices),
+        zero_mean_center(period_total_trades)
       ]).transpose())
 
       y_i = 0.0
