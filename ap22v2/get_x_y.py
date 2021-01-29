@@ -22,7 +22,7 @@ def zero_mean_center(series):
   return ((series - series.mean()) / series.std()).to_numpy()
 
 
-def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_appreciation_percentage, max_depreciation_percentage, evaluation=False):
+def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_appreciation_percentage, max_depreciation_percentage, max_class_imbalance_percentage, evaluation=False):
   x = []
   y = []
 
@@ -58,7 +58,7 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
         print(f'{symbol}: Cant use a bar due to 0 std in data.')
         continue
 
-      x.append(np.array([
+      x_i = np.array([
         # *encode_date_arr_as_day_of_week(period_close_prices.index.values),
         # *encode_date_arr_as_month_of_year(period_close_prices.index.values),
         zero_mean_center(period_open_prices),
@@ -68,7 +68,7 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
         zero_mean_center(period_volume),
         zero_mean_center(period_vwa_prices),
         zero_mean_center(period_total_trades)
-      ]).transpose())
+      ]).transpose()
 
       y_i = 0.0
       for bar in range(period_end_bar, period_end_bar+max_holding_period_bars):
@@ -85,8 +85,14 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
           y_i = 1.0
           break
 
-      y.append([y_i])
+      if sum(y)/(len(y)+0.001) < max_class_imbalance_percentage or y_i == 0.0:
+        x.append(x_i)
+        y.append(y_i)
 
-  x, y = np.array(x), np.array(y)
+      if (1-sum(y))/(len(y)+0.001) < max_class_imbalance_percentage or y_i == 1.0:
+        x.append(x_i)
+        y.append(y_i)
+
+  x, y = np.array(x), np.array(y).reshape(len(y), 1)
 
   return x, y

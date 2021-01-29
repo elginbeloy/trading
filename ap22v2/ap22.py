@@ -16,23 +16,25 @@ eval_symbol_bars = get_time_interval_bars(
 
 # Data Labeling HyperParams
 lookback_bars = 500
-max_holding_period_bars = 60
-target_appreciation_percentage = 0.35
+max_holding_period_bars = 600
+target_appreciation_percentage = 1.5
 max_depreciation_percentage = 5.0
-max_class_imbalance_percentage = 0.7 # Used for undersampling
+max_class_imbalance_percentage = 0.5 # Used for undersampling
 
 train_x, train_y = get_model_data(
   training_symbol_bars, 
   lookback_bars, 
   max_holding_period_bars, 
   target_appreciation_percentage, 
-  max_depreciation_percentage)
+  max_depreciation_percentage,
+  max_class_imbalance_percentage)
 eval_x, eval_y = get_model_data(
   eval_symbol_bars, 
   lookback_bars, 
   max_holding_period_bars, 
   target_appreciation_percentage, 
-  max_depreciation_percentage)
+  max_depreciation_percentage,
+  max_class_imbalance_percentage)
 
 print(f"T-X shape: {train_x.shape} | T-Y shape: {train_y.shape}")
 print(f"T-1s {sum(train_y)} | T-0s {len(train_y) - sum(train_y)}")
@@ -44,11 +46,12 @@ print(f"T-1s {sum(eval_y)} | T-0s {len(eval_y) - sum(eval_y)}")
 batch_size = 64
 epoch_amount = 100
 
-opt = keras.optimizers.Adam(learning_rate=0.001)
+opt = keras.optimizers.Adam(learning_rate=1e-05)
 
 print("Starting training...")
 model = keras.Sequential()
-model.add(keras.layers.recurrent.LSTM(12, return_sequences=True, input_shape=(train_x.shape[1], train_x.shape[2])))
+model.add(keras.layers.recurrent.LSTM(128, return_sequences=True, input_shape=(train_x.shape[1], train_x.shape[2])))
+model.add(keras.layers.recurrent.LSTM(128))
 model.add(keras.layers.core.Dense(1, activation='sigmoid'))
 model.compile(optimizer=opt, loss="binary_crossentropy", metrics=['accuracy'])
 
