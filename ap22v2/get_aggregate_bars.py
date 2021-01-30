@@ -1,9 +1,11 @@
-import datetime as dt
 import pandas as pd
 import numpy as np
+import pytz
+from datetime import datetime, timedelta
 from tqdm import tqdm
 from polygon import RESTClient
 from requests.exceptions import HTTPError
+from util import log_to_file
 
 api_key = "ESnn_eXGO4gk57uOohD6H7yfqB5_huCq"
 
@@ -12,15 +14,36 @@ def get_time_interval_bars(symbols, multiplier, interval, start_date, end_date):
 
   with RESTClient(api_key) as client:
     for symbol in tqdm(symbols):
-      try:
-        response = client.stocks_equities_aggregates(symbol, multiplier, interval, start_date, end_date)
-        if response.status != "OK" or not response.resultsCount:
-          print(f"Failed to fetch bars for {symbol}.")
+      results = []
+      current_start_date = start_date
+      while current_start_date != None:
+        try:
+          response = client.stocks_equities_aggregates(symbol, multiplier, interval, current_start_date, end_date, limit=50000)
+          if response.status != "OK" or response.resultsCount == 0:
+            log_to_file(f"[STATUSError] Failed to fetch bars for {symbol}.")
+            current_start_date = None
+            continue
+        except HTTPError as e:
+          log_to_file(f"[HTTPError] Failed to fetch bars for {symbol}.")
+          log_to_file(e)
+          current_start_date = None
           continue
-      except HTTPError:
-        print(f"Failed to fetch bars for {symbol}.")
 
-      symbol_bars[symbol] = pd.DataFrame(response.results)
+        results += response.results
+        response_end_date = datetime.utcfromtimestamp(results[-1]['t'] // 1000)
+        if (response_end_date + timedelta(days=10)) < datetime.strptime(end_date, '%Y-%m-%d'):
+          current_start_date = response_end_date.strftime('%Y-%m-%d')
+          log_to_file(f"[{symbol}-BARS] Hit 50k limit at {current_start_date} going to {end_date}.")
+        else:
+          current_start_date = None
+
+      if len(results) > 0:
+        first_result_time = datetime.utcfromtimestamp(results[0]['t'] // 1000).astimezone(pytz.timezone("US/Eastern")).strftime('%Y-%m-%d %H-%M-%S')
+        final_result_time = datetime.utcfromtimestamp(results[-1]['t'] // 1000).astimezone(pytz.timezone("US/Eastern")).strftime('%Y-%m-%d %H-%M-%S')
+
+        log_to_file(f"[{symbol}-BARS] Queried {len(results)} bars {first_result_time} -> {final_result_time}")
+        log_to_file(f"[{symbol}-BARS] {results[:3]} ... {results[-3:]}")
+        symbol_bars[symbol] = pd.DataFrame(results)
 
   return symbol_bars
 

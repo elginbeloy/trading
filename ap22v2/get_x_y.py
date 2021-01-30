@@ -28,6 +28,7 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
 
   for symbol in symbol_bars:
     bars = symbol_bars[symbol]
+    print(f"Symbol {symbol} has {len(bars)} bars!")
     
     open_prices = bars['o']
     high_prices = bars['h']
@@ -85,11 +86,14 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
           y_i = 1.0
           break
 
-      if sum(y)/(len(y)+0.001) < max_class_imbalance_percentage or y_i == 0.0:
+        print(appreciation)
+        print(depreciation)
+
+      if sum(y)/(len(y)+0.001) < max_class_imbalance_percentage / 100 and y_i == 1.0:
         x.append(x_i)
         y.append(y_i)
 
-      if (1-sum(y))/(len(y)+0.001) < max_class_imbalance_percentage or y_i == 1.0:
+      if 1-(sum(y)/(len(y)+0.001)) < max_class_imbalance_percentage / 100 and y_i == 0.0:
         x.append(x_i)
         y.append(y_i)
 

@@ -4,6 +4,46 @@ My notes, strategies, experiments, etc...
 
 ## TODO
 
+1. Data Understanding (20)
+- Code a way to download complete time aggregate bars
+  - Verify via logs it has everything maybe even write test
+- Add a shit load of data based logging so look through and understand the data and model
+- Go through logged bars data and understand various statistics about it
+  - What value of n, s, and p have best class imbalance values?
+  - What value of n, s, and p are most exploitable w/ good class imbalance?
+  - How often is data missing? 
+  - What outliers are present? What types and how common? 
+- Go through x, y generation from bars and understand:
+  - What is the general period mean, variance, etc...
+    - Potentially also look into autocorrelation and other statistics
+  - How does normilization and standardization effect bar values in the period?
+    - Is any information lost with the current method? 
+      - We only see change w.r.t to the period mean for the column
+      - I.E x is a 200-500 long sequence of OHLCV+VW+N values changing around their mean divided by their standard deviation for the period
+      - Is scale information lost? Volume scale relative to other stocks/periods.
+    - Is there a better method?
+  - What else could be added from the price action data to add additional info?
+  - Add minute of hour(?), hour of day, day of week, month of year, week of month (7/5 + 12 + 5 = 12/10 bits)
+    - Look into using continous values if appropriate (https://stats.stackexchange.com/questions/164542/is-time-of-the-day-predictor-in-regression-a-categorical-or-a-continuous-varia)
+- Expand total dataset by getting way more symbols and thinking through a good period logic
+  - Don't want to find correlations that no longer exist, but want a longer period for more data with the cyclical patterns 
+- Research a good way to measure variable importance and utilize it to select the best input data values (categorical vs. continuous date values)
+2. Try out various model architectures (stateless vs. stateful, GRU, other configurations, etc...)
+- Select a few of the best and use those to do other hyperparameter tuning
+3. Try out various bar aggregation methods and hyperparam test with the best models
+- For every hyperparater select the top 3-5 best options and tweak through those while testing other hyperparameters until you find the best combination of each
+4. 
+    
+
+1. See and understand your data. Make it your best friend.
+- Do you have all of your data? How can you expand it? Bigger = Better in most cases so spend a lot of time here until its as big as can be.
+- What is a good y-label that is exploitable, predictable, and has a good binary-class balance.
+- Go through data labeling and creation process and make sure each part and the final product is super clear to you. Log shit in log files and read through them.
+- Try out a few model architectures once you are happy with the data labeling, normilization, lookback, etc... 
+- Select a good archictecture while noting other good options.
+- Try different bar aggregation methods and see if it increases predictability.
+- Try adding a new network that looks at longer trend and other data.
+
 [ ] 1. Write up ap22 README.md
 [ ] 2. Break out ap22 into seperate components for 
 - the trade data download process
