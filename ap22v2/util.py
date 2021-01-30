@@ -1,7 +1,7 @@
 from datetime import datetime
 from termcolor import colored
 
-log_file = 'log.txt'
+log_file = 'log.log.txt'
 
 def log_to_file(val):
   with open(log_file, "a+") as file:
