@@ -4,6 +4,7 @@ import numpy as np
 from get_symbols import ROBINHOOD_COLLECTION_SYMBOLS
 from get_aggregate_bars import get_time_interval_bars
 from get_x_y import get_model_data
+from util import log_to_file
 from sklearn.metrics import classification_report, confusion_matrix
 
 training_symbols = ROBINHOOD_COLLECTION_SYMBOLS[:800]
@@ -15,11 +16,11 @@ eval_symbol_bars = get_time_interval_bars(
   eval_symbols, 30, "minute", "2020-01-01", "2021-01-01")
 
 # Data Labeling HyperParams
-lookback_bars = 300
-max_holding_period_bars = 8
-target_appreciation_percentage = 0.5
+lookback_bars = 200
+max_holding_period_bars = 2
+target_appreciation_percentage = 0.3
 max_depreciation_percentage = 1.0
-max_class_imbalance_percentage = 52 # Used for undersampling
+max_class_imbalance_percentage = 55 # Used for undersampling
 
 train_x, train_y = get_model_data(
   training_symbol_bars, 
@@ -36,24 +37,22 @@ eval_x, eval_y = get_model_data(
   max_depreciation_percentage,
   max_class_imbalance_percentage)
 
-print(f"T-X shape: {train_x.shape} | T-Y shape: {train_y.shape}")
-print(f"T-1s {sum(train_y)} | T-0s {len(train_y) - sum(train_y)}")
-print(f"E-X shape: {eval_x.shape} | E-Y shape: {eval_y.shape}")
-print(f"T-1s {sum(eval_y)} | T-0s {len(eval_y) - sum(eval_y)}")
+log_to_file(f"T-X shape: {train_x.shape} | T-Y shape: {train_y.shape}")
+log_to_file(f"T-1s {sum(train_y)} | T-0s {len(train_y) - sum(train_y)}")
+log_to_file(f"E-X shape: {eval_x.shape} | E-Y shape: {eval_y.shape}")
+log_to_file(f"T-1s {sum(eval_y)} | T-0s {len(eval_y) - sum(eval_y)}")
 
 
 # Model HyperParams
 batch_size = 128
 epoch_amount = 100
 
-opt = keras.optimizers.Adam(learning_rate=1e-05)
-
 print("Starting training...")
 model = keras.Sequential()
-model.add(keras.layers.recurrent.LSTM(7, return_sequences=True, input_shape=(train_x.shape[1], train_x.shape[2])))
-model.add(keras.layers.recurrent.LSTM(7))
+model.add(keras.layers.recurrent.LSTM(14, return_sequences=True, input_shape=(train_x.shape[1], train_x.shape[2])))
+model.add(keras.layers.recurrent.LSTM(14))
 model.add(keras.layers.core.Dense(1, activation='sigmoid'))
-model.compile(optimizer=opt, loss="binary_crossentropy", metrics=['accuracy'])
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=['accuracy'])
 
 model.fit(train_x, train_y, epochs=epoch_amount, batch_size=batch_size, validation_data=(eval_x, eval_y))
 

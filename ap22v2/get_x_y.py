@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from util import log_to_file
+
+
 
 def encode_date_arr_as_day_of_week(dates):
   arr = np.zeros((len(dates), 7), dtype=float)
@@ -19,7 +22,9 @@ def encode_date_arr_as_month_of_year(dates):
 
 def zero_mean_center(series):
   series = series.fillna(0.0)
-  return ((series - series.mean()) / series.std()).to_numpy()
+  arr = ((series - series.mean()) / series.std()).to_numpy()
+  log_to_file(f"Converted {series} into {arr}")
+  return arr
 
 
 def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_appreciation_percentage, max_depreciation_percentage, max_class_imbalance_percentage, evaluation=False):
@@ -28,7 +33,7 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
 
   for symbol in symbol_bars:
     bars = symbol_bars[symbol]
-    print(f"Symbol {symbol} has {len(bars)} bars!")
+    log_to_file(f"Symbol {symbol} has {len(bars)} bars!")
     
     open_prices = bars['o']
     high_prices = bars['h']
@@ -37,6 +42,7 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
     volume = bars['v']
     vwa_prices = bars['vw']
     total_trades = bars['n']
+    timestamps = bars['t']
 
     bar_range = range(
       lookback_bars, 
@@ -51,17 +57,19 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
       period_volume = volume.iloc[period_start_bar:period_end_bar]
       period_vwa_prices = vwa_prices.iloc[period_start_bar:period_end_bar]
       period_total_trades = total_trades.iloc[period_start_bar:period_end_bar]
+      period_timestamps = timestamps.iloc[period_start_bar:period_end_bar]
 
       if (period_open_prices.std() == 0 or period_close_prices.std() == 0 or
         period_low_prices.std() == 0 or period_high_prices.std() == 0 or 
         period_vwa_prices.std() == 0 or period_volume.std() == 0 or
         period_total_trades.std() == 0):
-        print(f'{symbol}: Cant use a bar due to 0 std in data.')
+        log_to_file(f'{symbol}: Cant use a bar due to 0 std in data.')
         continue
 
       x_i = np.array([
-        # *encode_date_arr_as_day_of_week(period_close_prices.index.values),
-        # *encode_date_arr_as_month_of_year(period_close_prices.index.values),
+        # *encode_timestamp_arr_as_hour_of_day(period_timestamps),
+        # *encode_timestamp_arr_as_day_of_week(period_timestamps),
+        # *encode_timestamp_arr_as_month_of_year(period_timestamps),
         zero_mean_center(period_open_prices),
         zero_mean_center(period_close_prices),
         zero_mean_center(period_low_prices),
@@ -85,9 +93,6 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
         if appreciation >= (open_prices.iloc[period_end_bar] * target_appreciation_percentage / 100):
           y_i = 1.0
           break
-
-        print(appreciation)
-        print(depreciation)
 
       if sum(y)/(len(y)+0.001) < max_class_imbalance_percentage / 100 and y_i == 1.0:
         x.append(x_i)

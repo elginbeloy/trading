@@ -41,7 +41,6 @@ def get_time_interval_bars(symbols, multiplier, interval, start_date, end_date):
         if response_end_date < datetime.strptime(end_date, '%Y-%m-%d'):
           current_start_date = response_end_date.strftime('%Y-%m-%d')
           log_to_file(f"[{symbol}-BARS] Hit 50k limit at {current_start_date} going to {end_date} (last appended {response.resultsCount})")
-          print(response.resultsCount)
         else:
           current_start_date = None
 
