@@ -54,8 +54,17 @@ def get_time_interval_bars(symbols, multiplier, interval, start_date, end_date):
 
   return symbol_bars
 
+def get_tick_interval_bars():
+  return []
+
+def get_volume_interval_bars():
+  return []
+
+def get_dollar_interval_bars():
+  return []
+
 '''
-def get_trade_imbalance_bars(symbol_trades, expected_bars_per_day):
+def get_imbalance_interval_bars(symbol_trades, expected_bars_per_day):
   bars = dict()
 
   for symbol in symbol_trades:

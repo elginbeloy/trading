@@ -1,31 +1,14 @@
 import pandas as pd
 import numpy as np
 from util import log_to_file
-
-
-
-def encode_date_arr_as_day_of_week(dates):
-  arr = np.zeros((len(dates), 7), dtype=float)
-  for date_index, date in enumerate(dates):
-    converted_datetime = pd.Timestamp(date).to_pydatetime()
-    arr[date_index][converted_datetime.weekday()] = 1.0
-  return arr.transpose()
-
-
-def encode_date_arr_as_month_of_year(dates):
-  arr = np.zeros((len(dates), 12), dtype=float)
-  for date_index, date in enumerate(dates):
-    converted_datetime = pd.Timestamp(date).to_pydatetime()
-    arr[date_index][converted_datetime.month - 1] = 1.0
-  return arr.transpose()
-
-
-def zero_mean_center(series):
-  series = series.fillna(0.0)
-  arr = ((series - series.mean()) / series.std()).to_numpy()
-  log_to_file(f"Converted {series} into {arr}")
-  return arr
-
+from data_util import (
+  real_value_scaled_minute_of_hour,
+  one_hot_hour_of_day, 
+  one_hot_day_of_week, 
+  one_hot_day_of_month,
+  one_hot_month_of_year,
+  standardize_series,
+)
 
 def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_appreciation_percentage, max_depreciation_percentage, max_class_imbalance_percentage, evaluation=False):
   x = []
@@ -67,16 +50,18 @@ def get_model_data(symbol_bars, lookback_bars, max_holding_period_bars, target_a
         continue
 
       x_i = np.array([
-        # *encode_timestamp_arr_as_hour_of_day(period_timestamps),
-        # *encode_timestamp_arr_as_day_of_week(period_timestamps),
-        # *encode_timestamp_arr_as_month_of_year(period_timestamps),
-        zero_mean_center(period_open_prices),
-        zero_mean_center(period_close_prices),
-        zero_mean_center(period_low_prices),
-        zero_mean_center(period_high_prices),
-        zero_mean_center(period_volume),
-        zero_mean_center(period_vwa_prices),
-        zero_mean_center(period_total_trades)
+        *real_value_scaled_minute_of_hour(period_timestamps),
+        *one_hot_hour_of_day(period_timestamps),
+        *one_hot_day_of_week(period_timestamps),
+        *one_hot_day_of_month(period_timestamps),
+        *one_hot_month_of_year(period_timestamps),
+        standardize_series(period_open_prices),
+        standardize_series(period_close_prices),
+        standardize_series(period_low_prices),
+        standardize_series(period_high_prices),
+        standardize_series(period_volume),
+        standardize_series(period_vwa_prices),
+        standardize_series(period_total_trades)
       ]).transpose()
 
       y_i = 0.0

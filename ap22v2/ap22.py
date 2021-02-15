@@ -7,20 +7,21 @@ from get_x_y import get_model_data
 from util import log_to_file
 from sklearn.metrics import classification_report, confusion_matrix
 
-training_symbols = ROBINHOOD_COLLECTION_SYMBOLS[:800]
+training_symbols = ROBINHOOD_COLLECTION_SYMBOLS[:100]
 training_symbol_bars = get_time_interval_bars(
-  training_symbols, 30, "minute", "2018-01-01", "2020-01-01")
+  training_symbols, 30, "minute", "2019-01-01", "2020-01-01")
 
-eval_symbols = ROBINHOOD_COLLECTION_SYMBOLS[800:]
+eval_symbols = ROBINHOOD_COLLECTION_SYMBOLS[100:130]
 eval_symbol_bars = get_time_interval_bars(
   eval_symbols, 30, "minute", "2020-01-01", "2021-01-01")
 
-# Data Labeling HyperParams
+# Hyperparameters for data labeling
 lookback_bars = 200
 max_holding_period_bars = 2
 target_appreciation_percentage = 0.3
 max_depreciation_percentage = 1.0
-max_class_imbalance_percentage = 55 # Used for undersampling
+# Used for undersampling the majority class (TODO: Do this w/out losing data?)
+max_class_imbalance_percentage = 55
 
 train_x, train_y = get_model_data(
   training_symbol_bars, 
@@ -41,7 +42,16 @@ log_to_file(f"T-X shape: {train_x.shape} | T-Y shape: {train_y.shape}")
 log_to_file(f"T-1s {sum(train_y)} | T-0s {len(train_y) - sum(train_y)}")
 log_to_file(f"E-X shape: {eval_x.shape} | E-Y shape: {eval_y.shape}")
 log_to_file(f"T-1s {sum(eval_y)} | T-0s {len(eval_y) - sum(eval_y)}")
-
+log_to_file("\n\n\n")
+np.set_printoptions(threshold=np.inf)
+log_to_file(f"Example T-X (Step 1-5 of T-X 1):")
+log_to_file(train_x[0][0:5])
+log_to_file(f"Corresponding T-Y:")
+log_to_file(train_y[0])
+log_to_file(f"Example E-X (Step 1-5 of E-X 1):")
+log_to_file(eval_x[0][0:5])
+log_to_file(f"Corresponding E-Y:")
+log_to_file(train_y[0])
 
 # Model HyperParams
 batch_size = 128
