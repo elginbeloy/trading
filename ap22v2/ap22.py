@@ -7,11 +7,11 @@ from get_x_y import get_model_data
 from util import log_to_file
 from sklearn.metrics import classification_report, confusion_matrix
 
-training_symbols = ROBINHOOD_COLLECTION_SYMBOLS[:100]
+training_symbols = ROBINHOOD_COLLECTION_SYMBOLS[:800]
 training_symbol_bars = get_time_interval_bars(
   training_symbols, 30, "minute", "2019-01-01", "2020-01-01")
 
-eval_symbols = ROBINHOOD_COLLECTION_SYMBOLS[100:130]
+eval_symbols = ROBINHOOD_COLLECTION_SYMBOLS[800:]
 eval_symbol_bars = get_time_interval_bars(
   eval_symbols, 30, "minute", "2020-01-01", "2021-01-01")
 

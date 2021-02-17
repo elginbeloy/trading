@@ -1,10 +1,12 @@
 # ap22 
 
-Asset Price Appreciation Predictor V2 | Elgin Beloy
+**Asset Price Appreciation Predictor V2 (ap22)**
 
-ap22 is a binary-model approach to predicting asset price appreciation over a
-period using ML. ap22 utilizes past trade data from the service 
-[polygon](https://polygon.io) to produce a binary prediction with a LSTM. 
+ap22 is an LSTM model for predicting the probability an asset price will 
+appreciate over a certain threshold within a period without first depreciating
+below a stop-loss amount. See the [tripple barrier label](https://mlfinlab.readthedocs.io/en/latest/labeling/tb_meta_labeling.html).
+
+ap22 utilizes past trade data from the service [polygon](https://polygon.io). 
 
 ap22 is not a trading model insofar as it does not actually execute trades. 
 Rather, think of ap22 as an analyst that informs a trader with yet another
@@ -15,16 +17,51 @@ predictions as input to another ML model. This way ap22 represents information
 gleamed from past price action, which can then be combined with other sources
 of information such as indicators, sentiment data, analyst predictions, etc...
 
+That said, ap22 could go through a list of assets and return those 
+that are most likely to appreciate within a preferred period without hitting
+a stop-loss. This portfolio could then be optimized based on probability 
+of predicted returns using the [pyportfolioopt](https://pyportfolioopt.readthedocs.io/en/latest) library.
+
+> NOTE: A black-box modeling approach like this is likely not the way to 
+> discover profitable strategies, but nonetheless may help find initial 
+> exploitable correlations and combined with other methods could help 
+> make trading decisions. See https://medium.com/@beloy.elgin/stop-trading-back-tested-models-start-trading-theories-e306dd3cc933
+
 ----
+
+## TODO 
+
+- [x] Add README.md with latest design and other information.
+- [ ] Look into embeddings for categorical features.
+- [ ] Finish bar aggregation code for tick, volume, dollar, imbalance bars.
+- [ ] Run automated experiments for finding optimal hyperparams.
+- [ ] Add prediction code. 
+- [ ] Add prediction portfolio creation/optimization with pyportfolioopt.
+  - [ ] Look into expanding model with meta-labeling for deciding
+asset allocation sizes from the probability outputs of the first model.
+
+## Experiment Results
+
+Current Results:
+
+```
+1000 Epochs:
+loss: 0.6382 - accuracy: 0.6247 - val_loss: 0.7576 - val_accuracy: 0.5155
+```
 
 ## Design 
 
-ap22 is broken up into five files for each of its functions:
-1. `get_symbols.py` - has different symbol lists, including scraping options
-2. `get_trade_data.py` - downloades trade data from polygon
-3. `get_aggregate_bars.py` - creates (or queries) aggregate bars
-4. `get_x_y.py` - creates (x, y) model-ready data from aggregate bars (includes labeling and normalization)
-5. `ap22.py` - constructs, trains, evaluates, and predicts the model
+ap22 is broken up into six files for each function (excluding utils):
+1. `get_symbols.py` - returns different asset symbol lists, including 
+web-based scraping options.
+2. `get_trade_data.py` - downloads tick-level trade data from 
+[polygon](https://polygon.io).
+3. `get_aggregate_bars.py` - creates (or queries) various aggregate bar types
+including time, tick, volume, dollar, and event/imbalance.
+4. `get_x_y.py` - creates (x, y) model-ready data from aggregate bars.
+5. `model.py` - constructs the ap22 LSTM model architecture.
+6. `ap22.py` - the main entry point responsible for training, evaluation, 
+prediction and portfolio creation/optimization. 
 
 ### 1. get_symbols.py
 
@@ -84,8 +121,26 @@ Normilization methods and labeling should be reconsidered and researched.
 
 ### 4. Model Construction
 
-The model is a multi-layer LSTM. Architecture and evaluation should be considered.
+The model is a multi-layer LSTM.
 
-## Experiment Results
+Categorical data is fed into an embedding layer:
+
+> a one-hot encoding followed by a dense layer is the same as a single embedding layer. Try both and you should get the same results with different runtime. Do the linear algebra if you need to convince yourself.
+
+Ref: https://github.com/keras-team/keras/issues/4838
+
+For the embedding layer output dimension consider:
+
+> number_of_categories_for_embedding ** 0.25
+
+Ref: https://developers.googleblog.com/2017/11/introducing-tensorflow-feature-columns.html
+
+Another possible approach is outlined in [the following paper.](https://www.aclweb.org/anthology/I17-2006.pdf)
+
+For combining multiple input layers (I.E the embeddings with other variables) see the following examples:
+1. [Blogpost](https://jessicastringham.net/2019/06/02/climate-with-keras)
+2. [Notebook](https://github.com/mmortazavi/EntityEmbedding-Working_Example/blob/master/EntityEmbedding.ipynb)
+3. [SO post](https://stackoverflow.com/questions/51360827/how-to-combine-numerical-and-categorical-values-in-a-vector-as-input-for-lstm)
+4. [Kaggle Kernel](https://www.kaggle.com/kowaalczyk/lstm-with-convolutions)
 
 --
