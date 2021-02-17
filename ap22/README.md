@@ -93,7 +93,7 @@ Files are saved with the format `{SYMBOL}-{START_DATE}-{END_DATE}`.
 Two intervals of the same symbol can be easily combined by loading 
 both as seperate numpy arrays and concatening them. 
 
-### 2. Bar Generation
+### 3. get_aggregate_bars.py
 
 `get_aggregate_bars.py` supports multiple different aggregate bar types:
 1. time-interval bars - 1m, 5m, 1h, 1d, etc...
@@ -116,12 +116,12 @@ also be researched and employed.
 > Note: If bar generation takes long enough, we should consider also saving generated
 bars, not just requested trades.
 
-### 3. Data (X, Y) Creation
+### 4. get_x_y.py
 
 X data is the normalized bar data and Y is the tripple barrier method. 
 Normilization methods and labeling should be reconsidered and researched. 
 
-### 4. Model Construction
+### 5. model.py / ap22.py
 
 The model is a multi-layer LSTM.
 
