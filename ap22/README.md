@@ -31,8 +31,10 @@ of predicted returns using the [pyportfolioopt](https://pyportfolioopt.readthedo
 
 ## TODO 
 
-- [x] Add README.md with latest design and other information.
-- [ ] Look into embeddings for categorical features.
+- [x] Add README.md with latest design and other information
+- [ ] Add `model.py` with embeddings for categorical features and multiple
+input nodes with a concat. 
+- [ ] Add bid/ask data.
 - [ ] Finish bar aggregation code for tick, volume, dollar, imbalance bars.
 - [ ] Run automated experiments for finding optimal hyperparams.
 - [ ] Add prediction code. 
@@ -59,7 +61,7 @@ web-based scraping options.
 3. `get_aggregate_bars.py` - creates (or queries) various aggregate bar types
 including time, tick, volume, dollar, and event/imbalance.
 4. `get_x_y.py` - creates (x, y) model-ready data from aggregate bars.
-5. `model.py` - constructs the ap22 LSTM model architecture.
+5. `model.py` - WIP constructs the ap22 LSTM model architecture.
 6. `ap22.py` - the main entry point responsible for training, evaluation, 
 prediction and portfolio creation/optimization. 
 
@@ -73,7 +75,7 @@ It can also scrape Robinhood collections pages to get new symbols lists.
 ### 2. get_trade_data.py
 
 > Note: Individual trades data is only needed for custom, non-time-interval 
-aggregate bars such as information-imbalance bars
+> aggregate bars such as tick/volume/dollar/information-imbalance bars
 
 All data comes from the 
 [polygon trades api](https://polygon.io/docs/get_v2_ticks_stocks_trades__ticker___date__anchor).
