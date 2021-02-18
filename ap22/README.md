@@ -4,7 +4,7 @@
 
 ap22 is an LSTM model for predicting the probability an asset price will 
 appreciate over a certain threshold within a period without first depreciating
-below a stop-loss amount. See the [tripple barrier label](https://mlfinlab.readthedocs.io/en/latest/labeling/tb_meta_labeling.html).
+below a stop-loss amount. See the [triple barrier label](https://mlfinlab.readthedocs.io/en/latest/labeling/tb_meta_labeling.html).
 
 ap22 utilizes past trade data from the service [polygon](https://polygon.io). 
 
@@ -32,10 +32,11 @@ of predicted returns using the [pyportfolioopt](https://pyportfolioopt.readthedo
 ## TODO 
 
 - [x] Add README.md with latest design and other information
-- [ ] Add `model.py` with embeddings for categorical features and multiple
+- [x] Add `model.py` with embeddings for categorical features and multiple
 input nodes with a concat. 
-- [ ] Add bid/ask data.
+- [x] Verify new `model.py`
 - [ ] Finish bar aggregation code for tick, volume, dollar, imbalance bars.
+- [ ] Add bid/ask data.
 - [ ] Run automated experiments for finding optimal hyperparams.
 - [ ] Add prediction code. 
 - [ ] Add prediction portfolio creation/optimization with pyportfolioopt.
@@ -81,7 +82,7 @@ All data comes from the
 [polygon trades api](https://polygon.io/docs/get_v2_ticks_stocks_trades__ticker___date__anchor).
 
 Data is downloaded by the day via REST request with a limit of 50k trades. 
-Given the amount of requests nessesary to download years of trade data, it 
+Given the amount of requests necessary to download years of trade data, it 
 should ideally only be done once. Because of this `get_trade_data.py` takes 
 a list of symbols and a time interval then saves the trades data locally 
 as a `.npy` numpy file. 
@@ -91,7 +92,7 @@ When training in the cloud we can upload from our computer a single time.
 
 Files are saved with the format `{SYMBOL}-{START_DATE}-{END_DATE}`. 
 Two intervals of the same symbol can be easily combined by loading 
-both as seperate numpy arrays and concatening them. 
+both as separate numpy arrays and concatenating them. 
 
 ### 3. get_aggregate_bars.py
 
@@ -110,7 +111,7 @@ trades data from polygon as saved in our data download directory.
 
 Using the trades data from polygon, Bars are created based on an imbalance rule
 rather than abstract time intervals like 1 minute. The approaches should be 
-compared and final accuracy reviewed though. Other imabalance methods should
+compared and final accuracy reviewed though. Other imbalance methods should
 also be researched and employed. 
 
 > Note: If bar generation takes long enough, we should consider also saving generated
@@ -118,8 +119,8 @@ bars, not just requested trades.
 
 ### 4. get_x_y.py
 
-X data is the normalized bar data and Y is the tripple barrier method. 
-Normilization methods and labeling should be reconsidered and researched. 
+X data is the normalized bar data and Y is the triple barrier method. 
+Normalization methods and labeling should be reconsidered and researched. 
 
 ### 5. model.py / ap22.py
 
@@ -138,11 +139,4 @@ For the embedding layer output dimension consider:
 Ref: https://developers.googleblog.com/2017/11/introducing-tensorflow-feature-columns.html
 
 Another possible approach is outlined in [the following paper.](https://www.aclweb.org/anthology/I17-2006.pdf)
-
-For combining multiple input layers (I.E the embeddings with other variables) see the following examples:
-1. [Blogpost](https://jessicastringham.net/2019/06/02/climate-with-keras)
-2. [Notebook](https://github.com/mmortazavi/EntityEmbedding-Working_Example/blob/master/EntityEmbedding.ipynb)
-3. [SO post](https://stackoverflow.com/questions/51360827/how-to-combine-numerical-and-categorical-values-in-a-vector-as-input-for-lstm)
-4. [Kaggle Kernel](https://www.kaggle.com/kowaalczyk/lstm-with-convolutions)
-
 --
