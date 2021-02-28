@@ -1,115 +1,96 @@
-import numpy as np
 from get_symbols import ROBINHOOD_COLLECTION_SYMBOLS
 from get_aggregate_bars import get_time_interval_bars
 from get_model_data import get_model_data
 from util import log_to_file
-from model import get_model
-from sklearn.metrics import classification_report, confusion_matrix
+from model import train_and_eval_model
+import skopt
+from get_trade_data import download_trade_data
 
-training_symbols = ROBINHOOD_COLLECTION_SYMBOLS[:10]
-training_symbol_bars = get_time_interval_bars(
-  training_symbols, 30, "minute", "2017-01-01", "2020-01-01")
+# Define list of training and eval symbols
+training_symbols = ROBINHOOD_COLLECTION_SYMBOLS[:800]
+eval_symbols = ROBINHOOD_COLLECTION_SYMBOLS[800:]
 
-eval_symbols = ROBINHOOD_COLLECTION_SYMBOLS[10:20]
-eval_symbol_bars = get_time_interval_bars(
-  eval_symbols, 30, "minute", "2020-01-01", "2021-01-01")
+# Define training and eval start and end dates
+train_start_date = "2016-01-01"
+train_end_date = "2020-01-01"
+eval_start_date = train_end_date
+eval_end_date = "2021-02-01"
 
-# Hyperparameters for data labeling
-lookback_bars = 200
-max_holding_period_bars = 2
-target_appreciation_percentage = 0.3
-max_depreciation_percentage = 1.0
-# Used for undersampling the majority class (TODO: Do this w/out losing data?)
-max_class_imbalance_percentage = 55
+'''
+COMMENTED OUT UNTIL DOWNLOADED TRADE DATA IS SPLIT/DIVIDEND ADJUSTED
 
-model_training_data = get_model_data(
-  training_symbol_bars, 
-  lookback_bars, 
-  max_holding_period_bars, 
-  target_appreciation_percentage, 
-  max_depreciation_percentage,
-  max_class_imbalance_percentage)
-model_eval_data = get_model_data(
-  eval_symbol_bars, 
-  lookback_bars, 
-  max_holding_period_bars, 
-  target_appreciation_percentage, 
-  max_depreciation_percentage,
-  max_class_imbalance_percentage)
+# Download (adjusted) trade data locally for use later
+download_trade_data(training_symbols, start_date="2016-01-01",
+  end_date="2020-01-01", data_dir="./trade_data")
+download_trade_data(eval_symbols, start_date="2020-01-01",
+  end_date="2021-02-01", data_dir="./eval_trade_data")
 
-log_to_file(f"Model Training Data Shapes:")
-log_to_file(model_training_data['bar_values_arr'].shape)
-log_to_file(model_training_data['minute_of_day_arr'].shape)
-log_to_file(model_training_data['day_of_week_arr'].shape)
-log_to_file(model_training_data['day_of_year_arr'].shape)
-log_to_file(model_training_data['labels_arr'].shape)
+tick_training_bars = get_tick_interval_bars(bar_size_ticks=1000)
+tick_eval_bars = get_tick_interval_bars(
+  bar_size_ticks=1000, data_dir="./eval_trade_data")
+'''
 
-# Model HyperParams
-batch_size = 128
-epoch_amount = 1000
+time_training_bars = get_time_interval_bars(
+  training_symbols,  
+  interval="minute", 
+  interval_multiplier=10, 
+  start_date=train_start_date, 
+  end_date=train_end_date)
+time_eval_bars = get_time_interval_bars(
+  eval_symbols,  
+  interval="minute", 
+  interval_multiplier=10, 
+  start_date=eval_start_date, 
+  end_date=eval_end_date)
 
-# Train the model
-print("Starting training...")
-model = get_model(lookback_bars)
-model.fit(
-  [
-    model_training_data['bar_values_arr'],
-    model_training_data['minute_of_day_arr'],
-    model_training_data['day_of_week_arr'],
-    model_training_data['day_of_year_arr'],
-  ], 
-  model_training_data['labels_arr'], 
-  epochs=epoch_amount, 
-  batch_size=batch_size, 
-  validation_data=([
-    model_eval_data['bar_values_arr'],
-    model_eval_data['minute_of_day_arr'],
-    model_eval_data['day_of_week_arr'],
-    model_eval_data['day_of_year_arr'],
-  ], 
-  model_eval_data['labels_arr'])
-)
+# Define parameter search space used for labeling and training
+SEARCH_SPACE = [
+    skopt.space.Real(0.0001, 0.001, name='learning_rate'),
+    skopt.space.Integer(20, 500, name='lookback_bars'),
+    skopt.space.Integer(2, 100, name='max_holding_period_bars'),
+    skopt.space.Real(0.1, 5.0, name='target_appreciation_percentage'),
+    skopt.space.Real(0.1, 10.0, name='max_depreciation_percentage')]
 
-# Evaluate the trained model
-results = model.evaluate(
-  [
-    model_eval_data['bar_values_arr'],
-    model_eval_data['minute_of_day_arr'],
-    model_eval_data['day_of_week_arr'],
-    model_eval_data['day_of_year_arr'],
-  ], 
-  model_eval_data['labels_arr'], 
-  batch_size=batch_size
-)
-print("Eval loss, acc:", results)
+max_class_imbalance_percentage = 55 # For undersampling the majority class
 
-# Get evaluation predictions and generate report
-eval_predictions = model.predict(
-  [
-    model_eval_data['bar_values_arr'],
-    model_eval_data['minute_of_day_arr'],
-    model_eval_data['day_of_week_arr'],
-    model_eval_data['day_of_year_arr'],
-  ], 
-  batch_size=batch_size
-)
-eval_predictions = np.argmax(eval_predictions, axis=1)
-eval_confusion_matrix = confusion_matrix(
-  model_eval_data['labels_arr'], eval_predictions)
-target_names = ['Appreciated', 'Did Not Appreciate']
-classification_report(
-  model_eval_data['labels_arr'], 
-  eval_predictions, 
-  target_names=target_names
-)
+@skopt.utils.use_named_args(SEARCH_SPACE)
+def objective(**params):
+  log_to_file(f"Testing Iteration With Params: {params}")
 
-print('Confusion Matrix (tn, fp, fn, tp):')
-print(eval_confusion_matrix.ravel())
-print()
-print('Classification Report')
-print(classification_report)
+  model_training_data = get_model_data(
+    time_training_bars,
+    params["lookback_bars"],
+    params["max_holding_period_bars"],
+    params["target_appreciation_percentage"],
+    params["max_depreciation_percentage"],
+    max_class_imbalance_percentage)
+  model_eval_data = get_model_data(
+    time_eval_bars, 
+    params["lookback_bars"],
+    params["max_holding_period_bars"],
+    params["target_appreciation_percentage"],
+    params["max_depreciation_percentage"],
+    max_class_imbalance_percentage)
 
-# Save the final model
-model.save('model.h5')
+  log_to_file(f"Model Training Data Shapes:")
+  log_to_file(model_training_data['bar_values_arr'].shape)
+  log_to_file(model_training_data['minute_of_day_arr'].shape)
+  log_to_file(model_training_data['day_of_week_arr'].shape)
+  log_to_file(model_training_data['day_of_year_arr'].shape)
+  log_to_file(model_training_data['labels_arr'].shape)
 
-# TODO: Predict asset appreciation likelihood using current date 
+  # Train, evaluate, and save this model version
+  eval_acc = train_and_eval_model(
+    "test_model", 
+    model_training_data, 
+    model_eval_data, 
+    params["lookback_bars"],
+    learning_rate=params["learning_rate"])
+
+  log_to_file(f"Iteration Achieved {eval_acc} Accuracy.")
+
+  return eval_acc
+
+results = skopt.forest_minimize(objective, SEARCH_SPACE, n_calls=30, n_random_starts=10)
+log_to_file("FINAL RESULTS:")
+log_to_file(f"Params: {results.x} | Acc: {results.func}")

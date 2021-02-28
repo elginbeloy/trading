@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
+from json import load
 import pytz
 from datetime import datetime
+from os import listdir
 from tqdm import tqdm
 from polygon import RESTClient
 from requests.exceptions import HTTPError
@@ -9,7 +11,9 @@ from util import log_to_file
 
 api_key = "ESnn_eXGO4gk57uOohD6H7yfqB5_huCq"
 
-def get_time_interval_bars(symbols, multiplier, interval, start_date, end_date):
+# Queries time-interval bars from polygon directly
+def get_time_interval_bars(symbols, interval, interval_multiplier, 
+  start_date, end_date):
   symbol_bars = dict()
 
   with RESTClient(api_key) as client:
@@ -18,7 +22,9 @@ def get_time_interval_bars(symbols, multiplier, interval, start_date, end_date):
       current_start_date = start_date
       while current_start_date != None:
         try:
-          response = client.stocks_equities_aggregates(symbol, multiplier, interval, current_start_date, end_date, limit=50000)
+          response = client.stocks_equities_aggregates(symbol, 
+            interval_multiplier, interval, current_start_date, 
+            end_date, limit=50000)
 
           if response.status != "OK":
             log_to_file(f"[STATUSError] Failed to fetch bars for {symbol}.")
@@ -54,14 +60,98 @@ def get_time_interval_bars(symbols, multiplier, interval, start_date, end_date):
 
   return symbol_bars
 
-def get_tick_interval_bars():
-  return []
+# Builds tick-interval bars from locally downloaded trade data
+def get_tick_interval_bars(bar_size_ticks=1000, data_dir='./trade_data'):
+  symbol_bars = dict()
+  symbol_nbbos = dict()
 
-def get_volume_interval_bars():
-  return []
+  symbol_trade_files = [f for f in listdir(data_dir) if f.endswith('_trades.txt')]
+  for symbol_file in symbol_trade_files:
+    with open(f"{data_dir}/{symbol_file}") as file:
+      symbol_trades = load(file)
 
-def get_dollar_interval_bars():
-  return []
+    results = []
+    for trade_index in range(0, len(symbol_trades), bar_size_ticks):
+      bar_trades = symbol_trades[trade_index:trade_index+1000]
+      bar_trade_prices = [trade['p'] for trade in bar_trades]
+      bar_trade_sizes = [trade['s'] for trade in bar_trades]
+
+      results.append({
+        'o': bar_trade_prices[0],
+        'h': max(bar_trade_prices),
+        'l': min(bar_trade_prices),
+        'c': bar_trade_prices[-1],
+        'v': sum(bar_trade_sizes),
+        'vw': sum(bar_trade_sizes) / 1000, # TODO: fix this
+        't': symbol_trades[trade_index]['t']
+      })
+
+    if len(results) > 5:
+      symbol_bars[symbol_file.split("_")[0]] = pd.DataFrame(results)
+
+  return symbol_bars
+
+# Builds volume-interval bars from locally downloaded trade data
+# TODO: fix this
+def get_volume_interval_bars(data_dir='./trade_data'):
+  symbol_bars = dict()
+  symbol_nbbos = dict()
+
+  symbol_trade_files = [f for f in listdir(data_dir) if f.endswith('_trades.txt')]
+  for symbol_file in symbol_trade_files:
+    with open(f"{data_dir}/{symbol_file}") as file:
+      symbol_trades = load(file)
+
+    results = []
+    for trade_index in range(0, len(symbol_trades), bar_size_ticks):
+      bar_trades = symbol_trades[trade_index:trade_index+1000]
+      bar_trade_prices = [trade['p'] for trade in bar_trades]
+      bar_trade_sizes = [trade['s'] for trade in bar_trades]
+
+      results.append({
+        'o': bar_trade_prices[0],
+        'h': max(bar_trade_prices),
+        'l': min(bar_trade_prices),
+        'c': bar_trade_prices[-1],
+        'v': sum(bar_trade_sizes),
+        'vw': sum(bar_trade_sizes) / 1000, # TODO: fix this
+        't': symbol_trades[trade_index]['t']
+      })
+
+    symbol_bars[symbol_file.split("_")[0]] = pd.DataFrame(results)
+
+  return symbol_bars
+
+# Builds dollar-interval bars from locally downloaded trade data
+# TODO: fix this
+def get_dollar_interval_bars(data_dir='./trade_data'):
+  symbol_bars = dict()
+  symbol_nbbos = dict()
+
+  symbol_trade_files = [f for f in listdir(data_dir) if f.endswith('_trades.txt')]
+  for symbol_file in symbol_trade_files:
+    with open(f"{data_dir}/{symbol_file}") as file:
+      symbol_trades = load(file)
+
+    results = []
+    for trade_index in range(0, len(symbol_trades), bar_size_ticks):
+      bar_trades = symbol_trades[trade_index:trade_index+1000]
+      bar_trade_prices = [trade['p'] for trade in bar_trades]
+      bar_trade_sizes = [trade['s'] for trade in bar_trades]
+
+      results.append({
+        'o': bar_trade_prices[0],
+        'h': max(bar_trade_prices),
+        'l': min(bar_trade_prices),
+        'c': bar_trade_prices[-1],
+        'v': sum(bar_trade_sizes),
+        'vw': sum(bar_trade_sizes) / 1000, # TODO: fix this
+        't': symbol_trades[trade_index]['t']
+      })
+
+    symbol_bars[symbol_file.split("_")[0]] = pd.DataFrame(results)
+
+  return symbol_bars
 
 '''
 def get_imbalance_interval_bars(symbol_trades, expected_bars_per_day):

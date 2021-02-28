@@ -58,7 +58,6 @@ def get_model_data(
     close_prices = bars['c']
     volume = bars['v']
     vwa_prices = bars['vw']
-    total_trades = bars['n']
     timestamps = bars['t']
 
     # Iterate through bars grabbing a period of size sequence_length_bars 
@@ -76,14 +75,12 @@ def get_model_data(
       period_high_prices = high_prices.iloc[period_start_bar:period_end_bar]
       period_volume = volume.iloc[period_start_bar:period_end_bar]
       period_vwa_prices = vwa_prices.iloc[period_start_bar:period_end_bar]
-      period_total_trades = total_trades.iloc[period_start_bar:period_end_bar]
       period_timestamps = timestamps.iloc[period_start_bar:period_end_bar]
 
       # Verify standard_deviation is not zero, if it is we can't normalize
       if (period_open_prices.std() == 0 or period_close_prices.std() == 0 or
         period_low_prices.std() == 0 or period_high_prices.std() == 0 or 
-        period_vwa_prices.std() == 0 or period_volume.std() == 0 or
-        period_total_trades.std() == 0):
+        period_vwa_prices.std() == 0 or period_volume.std() == 0):
         log_to_file(f'{symbol}: Cant use a bar due to 0 std in data.')
         continue
 
@@ -95,7 +92,6 @@ def get_model_data(
         standardize_series(period_high_prices),
         standardize_series(period_volume),
         standardize_series(period_vwa_prices),
-        standardize_series(period_total_trades)
       ]).transpose()
 
       period_label = 0.0

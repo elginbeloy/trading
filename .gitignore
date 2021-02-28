@@ -2,3 +2,5 @@
 *.npy
 *.h5
 *.log.txt
+*_trades.txt
+*_nbbos.txt
