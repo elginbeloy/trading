@@ -9,6 +9,19 @@ from requests.exceptions import HTTPError
 
 api_key = "ESnn_eXGO4gk57uOohD6H7yfqB5_huCq"
 
+# Get list of acceptable trade exchange ids
+def get_accepted_trade_exchange_ids():
+  available_exchange_ids = []
+  with RESTClient(api_key) as client:
+    response = client.stocks_equities_exchanges()
+    for exchange in response.exchange:
+      # Excludes banks and Trade Reporting Facilities (TRFs)
+      if exchange.type == "exchange":
+        available_exchange_ids.append(exchange.i_d_of_the_exchange)
+  
+  return available_exchange_ids
+
+
 # Get splits for a list of symbols 
 def get_splits(symbols, start_date, end_date):
   start_date = datetime.strptime(start_date, "%Y-%m-%d")
@@ -60,6 +73,8 @@ def get_dividends(symbols, start_date, end_date):
 # Downloads trade data (with bid/ask if included) to SSD for bar creation
 def download_trade_data(symbols, start_date, end_date, include_bid_ask=True,
   data_dir='./trade_data'):
+  accepted_exchange_ids = get_accepted_trade_exchange_ids()
+
   # Create the data directory if not doesn't already exist
   if not os.path.exists(data_dir):
     os.makedirs(data_dir)
@@ -92,8 +107,9 @@ def download_trade_data(symbols, start_date, end_date, include_bid_ask=True,
             continue
           
           for trade in response.results:
-            trade_price = (trade['p'] / split_ratio) + dividend_amount
-            trades.append({'p': trade_price, 's': trade['s'], 't': trade['t']})
+            if trade['x'] in accepted_exchange_ids:
+              trade_price = (trade['p'] / split_ratio) + dividend_amount
+              trades.append({'p': trade_price, 's': trade['s'], 't': trade['t']})
           
           # If there are more than 50,000 trades, paginate through
           while response.results_count == 50000:
@@ -101,8 +117,9 @@ def download_trade_data(symbols, start_date, end_date, include_bid_ask=True,
             response = client.historic_trades_v2(symbol, day, 
               limit=50000, timestamp=last_trade_timestamp)
             for trade in response.results:
-              trade_price = (trade['p'] / split_ratio) + dividend_amount
-              trades.append({'p': trade_price, 's': trade['s'], 't': trade['t']})
+              if trade['x'] in accepted_exchange_ids:
+                trade_price = (trade['p'] / split_ratio) + dividend_amount
+                trades.append({'p': trade_price, 's': trade['s'], 't': trade['t']})
 
           # Get bid_ask data if included
           if include_bid_ask:

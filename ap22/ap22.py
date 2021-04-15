@@ -1,5 +1,5 @@
 from get_symbols import ROBINHOOD_COLLECTION_SYMBOLS
-from get_aggregate_bars import get_time_interval_bars
+from get_aggregate_bars import get_tick_interval_bars
 from get_model_data import get_model_data
 from util import log_to_file
 from model import train_and_eval_model
@@ -12,14 +12,11 @@ eval_symbols = ROBINHOOD_COLLECTION_SYMBOLS[800:]
 
 # Define training and eval start and end dates
 train_start_date = "2016-01-01"
-train_end_date = "2020-01-01"
+train_end_date = "2020-01-05"
 eval_start_date = train_end_date
-eval_end_date = "2021-02-01"
+eval_end_date = "2021-02-07"
 
-'''
-COMMENTED OUT UNTIL DOWNLOADED TRADE DATA IS SPLIT/DIVIDEND ADJUSTED
-
-# Download (adjusted) trade data locally for use later
+# Download trade data locally for use later
 download_trade_data(training_symbols, start_date="2016-01-01",
   end_date="2020-01-01", data_dir="./trade_data")
 download_trade_data(eval_symbols, start_date="2020-01-01",
@@ -28,20 +25,6 @@ download_trade_data(eval_symbols, start_date="2020-01-01",
 tick_training_bars = get_tick_interval_bars(bar_size_ticks=1000)
 tick_eval_bars = get_tick_interval_bars(
   bar_size_ticks=1000, data_dir="./eval_trade_data")
-'''
-
-time_training_bars = get_time_interval_bars(
-  training_symbols,  
-  interval="minute", 
-  interval_multiplier=10, 
-  start_date=train_start_date, 
-  end_date=train_end_date)
-time_eval_bars = get_time_interval_bars(
-  eval_symbols,  
-  interval="minute", 
-  interval_multiplier=10, 
-  start_date=eval_start_date, 
-  end_date=eval_end_date)
 
 # Define parameter search space used for labeling and training
 SEARCH_SPACE = [
@@ -58,14 +41,14 @@ def objective(**params):
   log_to_file(f"Testing Iteration With Params: {params}")
 
   model_training_data = get_model_data(
-    time_training_bars,
+    tick_training_bars,
     params["lookback_bars"],
     params["max_holding_period_bars"],
     params["target_appreciation_percentage"],
     params["max_depreciation_percentage"],
     max_class_imbalance_percentage)
   model_eval_data = get_model_data(
-    time_eval_bars, 
+    tick_eval_bars, 
     params["lookback_bars"],
     params["max_holding_period_bars"],
     params["target_appreciation_percentage"],
