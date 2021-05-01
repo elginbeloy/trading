@@ -1,0 +1,1 @@
+test_asset_list = ['AAPL', 'GOOG', 'AMC', 'LYFT', 'ZM', 'BABA', 'AMZN', 'DVAX', 'MSFT', 'PYPL', 'TWTR', 'FB', 'SNAP', 'TRVG', 'BL', 'KLAC', 'TTWO', 'PYPL', 'PSEC', 'SLAB', 'NFLX', 'IMGN', 'CLOU', 'GFF']

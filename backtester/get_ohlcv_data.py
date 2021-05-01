@@ -1,10 +1,13 @@
 import pytz
 import pandas as pd
+from os import listdir, mkdir, path
 from datetime import datetime
 from polygon import RESTClient
 from requests.exceptions import HTTPError
 
 api_key = "ESnn_eXGO4gk57uOohD6H7yfqB5_huCq"
+
+SAVE_DIR = "ohlcv_data"
 
 # Queries time-interval bars from polygon directly
 def get_time_interval_bars(symbol, interval, interval_multiplier, 
@@ -64,3 +67,37 @@ def get_time_interval_bars(symbol, interval, interval_multiplier,
     print(f'[{symbol}-BARS] Complete!')
 
   return results
+
+
+def save_asset_dfs(asset_dfs, start_date, end_date):
+  if not path.exists(SAVE_DIR):
+    mkdir(SAVE_DIR)
+  
+  save_path = f"{SAVE_DIR}/{start_date}__{end_date}"
+  if not path.exists(save_path):
+    mkdir(save_path)
+
+  for symbol in asset_dfs.keys():
+    asset_dfs[symbol].to_pickle(f"{save_path}/{symbol}.pkl")
+
+
+def load_asset_dfs():
+  asset_dfs = dict()
+
+  chosen_date = ''
+  date_paths = listdir(SAVE_DIR)
+  if len(date_paths) > 1:
+    for index, date_path in enumerate(date_paths):
+      print(f"[{index}]: {date_path}")
+
+    user_input = input(": ")
+    chosen_date = date_paths[int(user_input)]
+  else:
+    chosen_date = date_paths[0]
+
+  for f in listdir(f"{SAVE_DIR}/{chosen_date}"):
+    symbol = f.split(".")[0]
+    df = pd.read_pickle(f"{SAVE_DIR}/{chosen_date}/{f}")
+    asset_dfs[symbol] = df
+
+  return asset_dfs
