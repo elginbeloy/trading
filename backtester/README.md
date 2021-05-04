@@ -70,10 +70,13 @@ so you optimize the threshold and MA window length.
 - [ ] Use bid-ask spread to backtest actual execution cost
 - [ ] Write tests
 
+- [ ] Add outlier detection and data verification
+  - [ ] Go through all price data looking for moves > 2*STD
+  - [ ] Go through aggregate data and verify it against YAHOO and others
+
 - [ ] Finish adding metrics to strategy printout (5 each)
   - [ ] Maximum drawdown %
   - [ ] Maximum drawdown length days
-  - [ ] Comparison to N-Over-A Buy-Hold return  
   - [ ] Sharpe ratio
   - [ ] Risk exposure over time (graph asset expenditure (y) and time (x) then take the area under the curve divided by highest possible y * total x - I.E portfolio exposure over time compared to maximum possible exposure. Could also consider what kind of exposure, I.E volatility of asset to which the portfolio is exposed)
 - [ ] Add plot metrics

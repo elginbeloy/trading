@@ -1,7 +1,9 @@
 import pandas as pd
 from pyfiglet import figlet_format
+from matplotlib.ticker import ScalarFormatter
+import matplotlib.pyplot as plt
 from termcolor import colored
-from utils import get_n_over_a_returns
+from utils import get_n_over_a_returns, add_column_to_asset_dfs
 
 '''
 The Strategy class to be inherited and used when creating a backtest strategy.
@@ -19,10 +21,47 @@ class Strategy:
     self.current_day = str()
     self.trades = []
 
+    self.indicators_to_graph = ["Close", "MFI"]
+
     self.init()
 
-  def set_all_asset_dfs(asset_dfs):
+  def set_all_asset_dfs(self, asset_dfs):
     self.all_asset_dfs = asset_dfs
+
+  def add_column_to_all_assets(self, column_name, input_columns, assign_val_func):
+    add_column_to_asset_dfs(self.all_asset_dfs, column_name, 
+      input_columns, assign_val_func)
+
+  def show_return_trade_plots(self):
+    for trade in self.trades:
+      if "return" in trade:
+        plot = input(f"Plot {trade['symbol']} y/N? :") == "y"
+        if plot:
+          plt.figure(figsize=[20,16])
+          plt_title = trade['symbol']
+          plt_title += f" {trade['entry_day']} - {trade['day']}"
+          plt.suptitle(plt_title)
+
+          for columns_to_graph in self.indicators_to_graph: 
+            for column in columns_to_graph:
+              if column not in self.all_asset_dfs[trade["symbol"]].columns:
+                print(f"Invalid column value: {column}!!")
+                exit()
+
+          indicator_plt = None
+          for index, columns in enumerate(self.indicators_to_graph[0:4]):
+            indicator_plt = plt.subplot(4, 1, index + 1, sharex = indicator_plt)
+            for column_name in columns:
+              series = self.all_asset_dfs[trade['symbol']][column_name][trade["entry_day"]:trade["day"]]
+              indicator_plt.plot(series.index, series, label=column_name)
+              indicator_plt.grid(True)
+              indicator_plt.legend(loc=2)
+              indicator_plt.yaxis.set_major_formatter(ScalarFormatter())
+              indicator_plt.yaxis.set_minor_formatter(ScalarFormatter())
+
+          plt.tight_layout()
+          plt.show()
+
 
   # Returns a dictionary of available equity per symbol based on trade history
   def get_available_equity(self):
@@ -34,12 +73,6 @@ class Strategy:
         equity[trade["symbol"]] -= trade["amount"]
 
     return equity
-
-  def add_column_to_all_assets(self, column_name, input_columns, assign_val_func):
-    for symbol in self.all_asset_dfs.keys():
-      input_series = [self.all_asset_dfs[symbol][c] for c in input_columns]
-      column_val = assign_val_func(*input_series)
-      self.all_asset_dfs[symbol][column_name] = column_val
 
   '''
   Returns the purchase information of an asset for a "return" trade.
@@ -67,12 +100,14 @@ class Strategy:
           asset_sum_price += trade["total_price"] * (amount_returned / trade["amount"])
           purchase_trades.append(trade)
 
-          if amount_to_return == 0:
+          # Check return amount is less than some small value.
+          # With Python imprecision there will be issues sometimes.
+          if amount_to_return <= 0.001:
             return {
               'purchase_trades': purchase_trades,
               'avg_purchase_price': asset_sum_price / return_trade_size
             }
-
+    
   def buy(self, asset_symbol, amount):
     asset_price = self.all_asset_dfs[asset_symbol].loc[self.current_day]["Close"]
     purchase_price = amount * asset_price
@@ -122,6 +157,7 @@ class Strategy:
         "total_price": sale_price,
         "purchase_trades": purchase_info["purchase_trades"],
         "avg_purchase_price": purchase_info['avg_purchase_price'],
+        "entry_day": purchase_info["purchase_trades"][0]["day"],
         "return": sale_price - (purchase_info['avg_purchase_price'] * amount),
         "return_percentage": ((sale_price / (purchase_info['avg_purchase_price'] * amount)) - 1) * 100})
     else:
@@ -168,6 +204,7 @@ class Strategy:
           "total_price": sale_price,
           "purchase_trades": purchase_info["purchase_trades"],
           "avg_purchase_price": purchase_info['avg_purchase_price'],
+          "entry_day": purchase_info["purchase_trades"][0]["day"],
           "return": sale_price - (purchase_info['avg_purchase_price'] * available_equity[asset_symbol]),
           "return_percentage": ((sale_price / (purchase_info['avg_purchase_price'] * available_equity[asset_symbol])) - 1) * 100})
 
@@ -216,7 +253,7 @@ class Strategy:
     print(colored(figlet_format("Trades"), "blue"))
     for trade in self.trades:
       if "return_percentage" in trade:
-        print(colored(f"{trade['symbol']} | {trade['purchase_trades'][0]['day']} - {trade['day']}", "blue"))
+        print(colored(f"{trade['symbol']} | {trade['entry_day']} - {trade['day']}", "blue"))
         print(f"Average Purchase Price: ${trade['avg_purchase_price']}")
         print(f"Total Purchase Price: ${trade['avg_purchase_price'] * trade['amount']}")
         print(f"Total Sale Price: ${trade['total_price']}")
@@ -231,6 +268,9 @@ class Strategy:
           print(buy_msg)
         
         print("\n\n")
+
+    if input("Show trade plots? y/N: ") == "y":
+      self.show_return_trade_plots()
 
     # Reset class state
     self.available_cash = 0
