@@ -1,5 +1,5 @@
 from ta.trend import MACD, SMAIndicator
-from ta.volume import MFIIndicator, money_flow_index
+from ta.volume import MFIIndicator
 from strategy import Strategy
 from utils import has_n_days_data
 
@@ -18,8 +18,6 @@ class MACDStratOne(Strategy):
     self.add_column_to_all_assets("MFI", ["High", "Low", "Close", "Volume"], lambda c1, c2, c3, c4: MFIIndicator(c1, c2, c3, c4).money_flow_index())
     self.add_column_to_all_assets("MACD", ["Close"], lambda c: MACD(c).macd())
     self.add_column_to_all_assets("MACD_SIG", ["Close"], lambda c: MACD(c).macd_signal())
-
-    self.indicators_to_graph = [["Close"], ["MFI"], ["Close", "SMA_10", "SMA_50", "SMA_200"], ["MACD", "MACD_SIG"]]
 
   def create_signals(self):
     typical_bet_size = self.available_cash * DEFAULT_RISK_PER_TRADE

@@ -1,5 +1,14 @@
 from matplotlib.ticker import ScalarFormatter
 import matplotlib.pyplot as plt
+import matplotlib as mlp
+
+colors = [
+  "#038DB2",
+  "#F9637C",
+  "#FBB45C",
+  "#45AAB4"
+]
+mlp.rcParams['axes.prop_cycle'] = mlp.cycler(color=colors)
 
 def has_n_days_data(df, start_date, days):
   return len(df.loc[:start_date].index.to_list()) > days
@@ -39,18 +48,19 @@ def plot_asset_dfs(asset_dfs, to_graph=[["Close"]]):
         for column in columns_to_graph:
           if column not in asset_dfs[symbol].columns:
             print(f"Invalid column value: {column}!!")
-            exit()
+            return
 
       indicator_plt = None
       for index, columns in enumerate(to_graph[0:4]):
         indicator_plt = plt.subplot(4, 1, index + 1, sharex = indicator_plt)
         for column_name in columns:
           series = asset_dfs[symbol][column_name]
-          indicator_plt.plot(series.index, series, label=column_name)
+          indicator_plt.plot(series.index, series, lw=2, label=column_name)
+          indicator_plt.fill_between(series.index, 0, series, alpha=0.1)
           indicator_plt.grid(True)
           indicator_plt.legend(loc=2)
           indicator_plt.yaxis.set_major_formatter(ScalarFormatter())
           indicator_plt.yaxis.set_minor_formatter(ScalarFormatter())
 
-      plt.tight_layout()
+      plt.tight_layout(pad=4.0)
       plt.show()

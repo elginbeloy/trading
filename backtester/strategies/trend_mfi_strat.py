@@ -14,8 +14,6 @@ class TrendMFIStrat(Strategy):
     self.add_column_to_all_assets("SMA_200", ["Close"], lambda c: SMAIndicator(c, window=200).sma_indicator())
     self.add_column_to_all_assets("MFI", ["High", "Low", "Close", "Volume"], lambda c1, c2, c3, c4: MFIIndicator(c1, c2, c3, c4).money_flow_index())
 
-    self.indicators_to_graph = [["Close"], ["MFI"], ["Close", "SMA_10", "SMA_20", "SMA_50", "SMA_200"]]
-
   def create_signals(self):
     typical_bet_size = self.available_cash * DEFAULT_RISK_PER_TRADE
 
