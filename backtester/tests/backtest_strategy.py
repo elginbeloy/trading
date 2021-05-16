@@ -1,8 +1,8 @@
 from get_ohlcv_data import load_asset_dfs
 from strategies.n_over_a_strat import NOverAStrategy
 
-TEST_START_DATE = '2016-01-01'
-TEST_END_DATE = ' 2021-01-01'
+TEST_START_DATE = '2019-01-01'
+TEST_END_DATE = '2021-01-01'
 
 INITIAL_CASH=10000
 COMMISSION_AND_SLIPPAGE = 0.01

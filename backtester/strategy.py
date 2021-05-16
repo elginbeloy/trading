@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime, timedelta
 from pyfiglet import figlet_format
 from termcolor import colored
 from utils import get_n_over_a_returns, add_column_to_asset_dfs, plot_asset_dfs
@@ -41,6 +42,10 @@ class Strategy:
 
   # To be defined in the implemented subclass, called on __init__
   def init(self):
+    pass
+
+  # To be defined in the implemented subclass, called on backtest
+  def backtest_init(self):
     pass
 
   # To be defined in the implemented subclass, called on advance_to_day during
@@ -100,7 +105,11 @@ class Strategy:
             }
     
   def buy(self, asset_symbol, amount):
-    asset_price = self.all_asset_dfs[asset_symbol].loc[self.current_day]["Close"]
+    # Asset price used for purchase is the NEXT AVAILABLE days open price.
+    # Basically a MOO order placed the night before.
+    next_day = (datetime.strptime(self.current_day, "%Y-%m-%d") + 
+      timedelta(days=1)).strftime("%Y-%m-%d")
+    asset_price = self.all_asset_dfs[asset_symbol].loc[next_day:]["Open"].iloc[0]
     purchase_price = amount * asset_price
     purchase_price *= 1 + self.commission_slippage
     
@@ -126,7 +135,11 @@ class Strategy:
       print(f"[SELL-{asset_symbol}] Amount must be greater than zero!")
       return
 
-    asset_price = self.all_asset_dfs[asset_symbol].loc[self.current_day]["Close"]
+    # Asset price used for sale is the NEXT AVAILABLE days open price.
+    # Basically a MOO order placed the night before.
+    next_day = (datetime.strptime(self.current_day, "%Y-%m-%d") + 
+      timedelta(days=1)).strftime("%Y-%m-%d")
+    asset_price = self.all_asset_dfs[asset_symbol].loc[next_day:]["Open"].iloc[0]
     sale_price = amount * asset_price
     sale_price *= 1 - self.commission_slippage
     
@@ -173,6 +186,8 @@ class Strategy:
     self.available_cash = starting_cash
     self.commission_slippage = commission_slippage
     self.trades = []
+
+    self.backtest_init()
 
     days = pd.bdate_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
     for day in days.to_list():

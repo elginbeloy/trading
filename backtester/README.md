@@ -14,7 +14,7 @@ Think of strategies as a list of other more simplistic strategies which
 are - at their base - simple rules. Like the if statements in your next 
 function, strategies are just set of rules of a buy or sell signal and a
 calculation of an amount. We should find a way to define strategies as 
-encoroprating more simple strategies and having a way to measure the impact
+incorporating more simple strategies and having a way to measure the impact
 of each "rule". Maybe its only a logging mechanism to place within the ifs, 
 but we need a way to measure how much each "rule" - of if statement - is 
 accomplishing its goal and affecting our overall strategy.
